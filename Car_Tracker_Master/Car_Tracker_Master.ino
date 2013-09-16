@@ -1,5 +1,4 @@
-// Test code for Adafruit GPS modules using MTK3329/MTK3339 driver
-
+// Car GPS Tracker System - Master Arduino Code
 // ***************************************
 // Library Inclusions
 // ***************************************
