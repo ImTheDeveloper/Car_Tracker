@@ -22,6 +22,10 @@ struct RECEIVE_DATA_STRUCTURE{
 //give a name to the group of data
 RECEIVE_DATA_STRUCTURE mydata;
 
+
+char latty[20];
+char longy[20];
+
 void setup(){
   Serial.begin(38400);
   mySerial2ndDuno.begin(9600);
@@ -40,6 +44,9 @@ void loop(){
      Serial.println(mydata.latitude);
      Serial.println(mydata.longitude);
    
+   //Convert the inbound floats/doubles/ints into string ready for sending to json
+     String lat = dtostrf(convertDegMinToDecDeg(mydata.latitude),10,6,latty);
+      String lon = dtostrf(convertDegMinToDecDeg(mydata.longitude),10,6,longy);
     
     }
   
