@@ -29,8 +29,7 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 unsigned long sleepTime; //how long you want the arduino to sleep
 int fix_try_counter; //Initiate counter to hold value for number of fix retries
 int GPSEnablePin = 7; //Set digital pin number to be linked to gps enable pin. This allows GPS to be powered on and off by setting HIGH/LOW
-char latty[20];
-char longy[20];
+
 
 
 struct SEND_DATA_STRUCTURE{
@@ -129,25 +128,14 @@ void loop()                     // run over and over again
     timer = millis(); // reset the timer
     
       digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled. // Need to test whether we move this to  ******** <----
-      String lat = dtostrf(convertDegMinToDecDeg(GPS.latitude),10,6,latty);
-      String lon = dtostrf(convertDegMinToDecDeg(GPS.longitude),10,6,longy);
+    
       
-      lat.trim();
-      lon.trim();
-      
-       if (GPS.lon == 'W'){
-        lon = "-" + lon;
-       }
-       
-       if (GPS.lat == 'S'){
-         lat = "-" + lat;
-       }
+  
       
       mydata.latitude = GPS.latitude;
       mydata.longitude = GPS.longitude;
       ET.sendData();
 
-     // Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep.
 
         //Sleep
@@ -165,47 +153,4 @@ void loop()                     // run over and over again
 // Custom Functions
 // ***************************************
 
-String gps2string (String lat, float latitude, String lon, float longitude) {
 
-  int dd = (int) latitude/100;
-  int mm = (int) latitude % 100;
-  int mmm = (int) round(1000 * (latitude - floor(latitude)));
-  String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-  dd = (int) longitude/100;
-  mm = (int) longitude % 100;
-  mmm = (int) round(1000 * (longitude - floor(longitude)));
-  String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-  String myString = gps2lat + ", " + gps2lon;
-  return myString;
-};
-
-// returns a string of length n (fixed-width)
-String int2fw (int x, int n) { 
-  String s = (String) x;
-  while (s.length() < n) {
-    s = "0" + s;
-  }
-  return s;
-}
-
-
-int freeRam () {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
-}
-
-// degree-minute format to decimal-degrees
-double convertDegMinToDecDeg (float degMin) {
-  double min = 0.0;
-  double decDeg = 0.0;
- 
-  //get the minutes, fmod() requires double
-  min = fmod((double)degMin, 100.0);
- 
-  //rebuild coordinates in decimal degrees
-  degMin = (int) ( degMin / 100 );
-  decDeg = degMin + ( min / 60 );
- 
-  return decDeg;
-}
