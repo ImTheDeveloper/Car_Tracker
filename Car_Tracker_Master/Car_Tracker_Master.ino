@@ -117,35 +117,18 @@ void loop()                     // run over and over again
       return;  // we can fail to parse a sentence in which case we should just wait for another
   }
 
+
+
+  if (strstr(GPS.lastNMEA(), "RMC")) && GPS.fix && GPS.fixquality) {
+//******** <----
   // if millis() or timer wraps around, we'll just reset it
   if (timer > millis())  timer = millis();
 
   // approximately every 2 seconds or so, print out the current stats
   if (millis() - timer > 2000) { 
     timer = millis(); // reset the timer
-    //Serial.println(freeRam());
-//    Serial.print("\nTime: ");
-//    Serial.print(GPS.hour, DEC); Serial.print(':');
-//    Serial.print(GPS.minute, DEC); Serial.print(':');
-//    Serial.print(GPS.seconds, DEC); Serial.print('.');
-//    Serial.println(GPS.milliseconds);
-//    Serial.print("Date: ");
-//    Serial.print(GPS.day, DEC); Serial.print('/');
-//    Serial.print(GPS.month, DEC); Serial.print("/20");
-//    Serial.println(GPS.year, DEC);
-//    Serial.print("Fix: "); Serial.print((int)GPS.fix);
-//    Serial.print(" quality: "); Serial.println((int)GPS.fixquality); 
-    if (GPS.fix && GPS.fixquality) {
-//      Serial.print("Location: ");
-//      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-//      Serial.print(", "); 
-//      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-//      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-//      Serial.print("Angle: "); Serial.println(GPS.angle);
-//      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-//      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
-//      Serial.print("Google Maps Link: https://maps.google.com/maps?q=");
-//      Serial.println(gps2string((String) GPS.lat,GPS.latitude,(String) GPS.lon,GPS.longitude));
+    
+      digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled. // Need to test whether we move this to  ******** <----
       String lat = dtostrf(convertDegMinToDecDeg(GPS.latitude),10,6,latty);
       String lon = dtostrf(convertDegMinToDecDeg(GPS.longitude),10,6,longy);
       
@@ -163,17 +146,18 @@ void loop()                     // run over and over again
       mydata.latitude = GPS.latitude;
       mydata.longitude = GPS.longitude;
       ET.sendData();
-           
-      
+
      // Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
-      delay(5000);
-         digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
-        
+      delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep.
+
         //Sleep
           sleep.pwrDownMode(); //set sleep mode
           sleep.sleepDelay(sleepTime); //sleep for: sleepTime
-    }
+    
   }
+  
+}
+  
 }
 
 
