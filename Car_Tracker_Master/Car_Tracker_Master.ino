@@ -22,7 +22,6 @@ SoftwareSerial mySerial2ndDuno(2, 3); //connect main d2 to slave d3 and main d3 
 SoftEasyTransfer ET;
 Sleep sleep;
 
-
 //Definitions
 #define GPSECHO  false
 
@@ -33,6 +32,8 @@ int GPSEnablePin = 7; //Set digital pin number to be linked to gps enable pin. T
 unsigned long sleepTime; //how long you want the arduino to sleep
 uint32_t timer = millis();
 
+
+//Specific declaration for our arduino to arduino communication
 struct SEND_DATA_STRUCTURE{
   //put your variable definitions here for the data you want to send
   //THIS MUST BE EXACTLY THE SAME ON THE SLAVE ARDUINO
