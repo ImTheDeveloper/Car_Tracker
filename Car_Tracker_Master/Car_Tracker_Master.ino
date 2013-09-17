@@ -43,6 +43,10 @@ struct SEND_DATA_STRUCTURE{
 
 SEND_DATA_STRUCTURE mydata;
 
+// ***************************************
+// Setup
+// ***************************************
+
 void setup()  
 {
   //GPS Setup
@@ -56,15 +60,18 @@ void setup()
   //Setup serial to second arduino
   mySerial2ndDuno.begin(9600);
   ET.begin(details(mydata), &mySerial2ndDuno);
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(0)); //Our checksum for the data connection
   
   //General Setup
+  sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days.
   delay(1000);
-  sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days. Set to 30 minutes
 }
 
+// ***************************************
+// Loop
+// ***************************************
 
-void loop()                     // run over and over again
+void loop()
 {
   digitalWrite(GPSEnablePin,HIGH); //Ensure gps is disabled.
   // if a sentence is received, we can check the checksum, parse it...
