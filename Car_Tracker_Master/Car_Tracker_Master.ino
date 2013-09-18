@@ -72,6 +72,8 @@ void setup()
   sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days.
   retry_counter=0; //Set to 0 for initial setup
   delay(1000);
+  
+  //Serial.begin(38400);
 }
 
 // ***************************************
@@ -80,7 +82,7 @@ void setup()
 
 void loop()
 {
-  digitalWrite(GPSEnablePin,HIGH); //Ensure gps is disabled.
+  
   
   // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
@@ -88,13 +90,13 @@ void loop()
       return;  // we can fail to parse a sentence in which case we should just wait for another
   }
   if (strstr(GPS.lastNMEA(), "RMC") && GPS.fix && GPS.fixquality) {
-    //******** <----
+    digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
     // if millis() or timer wraps around, we'll just reset it
     if (timer > millis())  timer = millis();
     // approximately every 2 seconds or so, print out the current stats
     if (millis() - timer > 2000) { 
       timer = millis(); // reset the timer
-      digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled. // Need to test whether we move this to  ******** <--- 
+      
       mydata.latitude = GPS.latitude;
       mydata.longitude = GPS.longitude;
       
@@ -102,19 +104,23 @@ void loop()
       delay(1000); // Give our sleepy slave a second to get itself started up
       digitalWrite(SlaveInterruptPin,HIGH); // Set out pin back to High
       ET.sendData();
+      //Serial.println("fix!");
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep. Slave is set to 250ms for read loop this gives us atleast 4 attempts
       retry_counter=0; //Re-set the rety counter so we go round the loop again
       Knock_Out();//Sleep
+      digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled.
     }
   }
   
   retry_counter ++; //Add 1 to our retry counter
-  if (retry_counter == 120)
+  if (retry_counter >= 120)
   {
     digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
     retry_counter=0;
     Knock_Out();//Sleep
+    digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled.
   }
+  //Serial.println(retry_counter);
   delay(1000); // Wait 1 second before hitting the loop again
 }
 
