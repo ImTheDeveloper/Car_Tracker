@@ -31,7 +31,7 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 int GPSEnablePin = 7; //Set digital pin number to be linked to gps enable pin. This allows GPS to be powered on and off by setting HIGH/LOW
 unsigned long sleepTime; //how long you want the arduino to sleep
 uint32_t timer = millis();
-
+int retry_counter; //Our counter to check how many times we loop before sleeping to conserve battery
 
 //Specific declaration for our arduino to arduino communication
 struct SEND_DATA_STRUCTURE{
@@ -64,6 +64,7 @@ void setup()
   
   //General Setup
   sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days.
+  retry_counter=0; //Set to 0 for initial setup
   delay(1000);
 }
 
@@ -74,6 +75,7 @@ void setup()
 void loop()
 {
   digitalWrite(GPSEnablePin,HIGH); //Ensure gps is disabled.
+  
   // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
@@ -94,6 +96,15 @@ void loop()
       Knock_Out();//Sleep
     }
   }
+  
+  retry_counter ++; //Add 1 to our retry counter
+  if (retry_counter == 120)
+  {
+    digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
+    retry_counter=0;
+    Knock_Out();//Sleep
+  }
+  delay(1000); // Wait 1 second before hitting the loop again
 }
 
 
