@@ -32,6 +32,8 @@ int GPSEnablePin = 7; //Set digital pin number to be linked to gps enable pin. T
 unsigned long sleepTime; //how long you want the arduino to sleep
 uint32_t timer = millis();
 int retry_counter; //Our counter to check how many times we loop before sleeping to conserve battery
+int SlaveInterruptPin = 11; //Pin used to interrupt our sleeping slave
+
 
 //Specific declaration for our arduino to arduino communication
 struct SEND_DATA_STRUCTURE{
@@ -62,6 +64,10 @@ void setup()
   ET.begin(details(mydata), &mySerial2ndDuno);
   randomSeed(analogRead(0)); //Our checksum for the data connection
   
+  //Slave Interupt Setup
+  pinMode(SlaveInterruptPin,OUTPUT); //Ensure the pin is an output firstly
+  digitalWrite(SlaveInterruptPin,HIGH); //Initially set the pin to be high our interrupt will trigger when pin is low.
+  
   //General Setup
   sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days.
   retry_counter=0; //Set to 0 for initial setup
@@ -91,6 +97,10 @@ void loop()
       digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled. // Need to test whether we move this to  ******** <--- 
       mydata.latitude = GPS.latitude;
       mydata.longitude = GPS.longitude;
+      
+      digitalWrite(SlaveInterruptPin,LOW);
+      delay(1000); // Give our sleepy slave a second to get itself started up
+      digitalWrite(SlaveInterruptPin,HIGH); // Set out pin back to High
       ET.sendData();
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep. Slave is set to 250ms for read loop this gives us atleast 4 attempts
       Knock_Out();//Sleep
