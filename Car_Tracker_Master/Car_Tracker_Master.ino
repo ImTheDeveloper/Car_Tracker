@@ -73,7 +73,7 @@ void setup()
   retry_counter=0; //Set to 0 for initial setup
   delay(1000);
   
-  //Serial.begin(38400);
+  Serial.begin(38400);
 }
 
 // ***************************************
@@ -104,11 +104,16 @@ void loop()
       delay(1000); // Give our sleepy slave a second to get itself started up
       digitalWrite(SlaveInterruptPin,HIGH); // Set out pin back to High
       ET.sendData();
-      //Serial.println("fix!");
+      Serial.println("fix!");
+      Serial.println(GPS.fixquality);
+      Serial.print("\nTime: ");
+      Serial.print(GPS.hour, DEC); Serial.print(':');
+      Serial.print(GPS.minute, DEC); Serial.print(':');
+      Serial.print(GPS.seconds, DEC); Serial.print('.');
+      Serial.println(GPS.milliseconds);
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep. Slave is set to 250ms for read loop this gives us atleast 4 attempts
       retry_counter=0; //Re-set the rety counter so we go round the loop again
       Knock_Out();//Sleep
-      digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled.
     }
   }
   
@@ -118,9 +123,9 @@ void loop()
     digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
     retry_counter=0;
     Knock_Out();//Sleep
-    digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled.
+    
   }
-  //Serial.println(retry_counter);
+  Serial.println(retry_counter);
   delay(1000); // Wait 1 second before hitting the loop again
 }
 
@@ -134,6 +139,7 @@ void Knock_Out()
   //Sleep function using watchdog timer extended in most power saving mode "POWER DOWN"
   sleep.pwrDownMode();
   sleep.sleepDelay(sleepTime);
+  digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled now we are awake.
 }
 
 void useInterrupt(boolean v) {
