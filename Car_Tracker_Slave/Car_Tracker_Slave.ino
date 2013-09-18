@@ -1,17 +1,24 @@
+// ***************************************
+// Car GPS Tracker System - Slave Arduino Code
+// Sleep and wait for an external interrupt from master
+// disable interrupt and parse data from master arduino
+// Start up our gsm shield and send data to webserver
+// If data sent succesfully go back to sleep and wait for next
+// set of interrupts from master
+// ***************************************
+
+// ***************************************
+// Library Inclusions
+// ***************************************
+
 #include <SoftEasyTransfer.h>
-
-/*   For Arduino 1.0 and newer, do this:   */
 #include <SoftwareSerial.h>
+
+//Construction
 SoftwareSerial mySerial2ndDuno(2, 3); /// main d3 to second d3 and main d2 to second d3
-
-/*   For Arduino 22 and older, do this:   */
-//#include <NewSoftSerial.h>
-//NewSoftSerial mySerial(2, 3);
-
-
-//create object
 SoftEasyTransfer ET; 
 
+//Definitions
 struct RECEIVE_DATA_STRUCTURE{
   //put your variable definitions here for the data you want to receive
   //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
@@ -19,21 +26,26 @@ struct RECEIVE_DATA_STRUCTURE{
   float longitude;
 };
 
-//give a name to the group of data
+//Declarations
 RECEIVE_DATA_STRUCTURE mydata;
-
-
 char latty[20];
 char longy[20];
+
+// ***************************************
+// Setup
+// ***************************************
 
 void setup(){
   Serial.begin(38400);
   mySerial2ndDuno.begin(9600);
   Serial.println("Starting up..");
-  //start the library, pass in the data details and the name of the serial port.
-  ET.begin(details(mydata), &mySerial2ndDuno);
-  
+  ET.begin(details(mydata), &mySerial2ndDuno); 
 }
+
+// ***************************************
+// Loop
+// ***************************************
+
 
 void loop(){
   //check and see if a data packet has come in. 
@@ -75,9 +87,6 @@ void loop(){
 // Custom Functions
 // ***************************************
 
-
-
-
 String gps2string (String lat, float latitude, String lon, float longitude) {
 
   int dd = (int) latitude/100;
@@ -100,9 +109,6 @@ String int2fw (int x, int n) {
   }
   return s;
 }
-
-
-
 
 // degree-minute format to decimal-degrees
 double convertDegMinToDecDeg (float degMin) {
