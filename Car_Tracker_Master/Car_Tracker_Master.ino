@@ -32,6 +32,8 @@ int GPSEnablePin = 7; //Set digital pin number to be linked to gps enable pin. T
 unsigned long sleepTime; //how long you want the arduino to sleep
 uint32_t timer = millis();
 int retry_counter; //Our counter to check how many times we loop before sleeping to conserve battery
+int SlaveInterruptPin = 11; //Pin used to interrupt our sleeping slave
+
 
 //Specific declaration for our arduino to arduino communication
 struct SEND_DATA_STRUCTURE{
@@ -62,10 +64,16 @@ void setup()
   ET.begin(details(mydata), &mySerial2ndDuno);
   randomSeed(analogRead(0)); //Our checksum for the data connection
   
+  //Slave Interupt Setup
+  pinMode(SlaveInterruptPin,OUTPUT); //Ensure the pin is an output firstly
+  digitalWrite(SlaveInterruptPin,HIGH); //Initially set the pin to be high our interrupt will trigger when pin is low.
+  
   //General Setup
   sleepTime = 10000; //Set sleep time in ms, max sleep time is 49.7 days.
   retry_counter=0; //Set to 0 for initial setup
   delay(1000);
+  
+  Serial.begin(38400);
 }
 
 // ***************************************
@@ -74,7 +82,7 @@ void setup()
 
 void loop()
 {
-  digitalWrite(GPSEnablePin,HIGH); //Ensure gps is disabled.
+  
   
   // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
@@ -82,28 +90,42 @@ void loop()
       return;  // we can fail to parse a sentence in which case we should just wait for another
   }
   if (strstr(GPS.lastNMEA(), "RMC") && GPS.fix && GPS.fixquality) {
-    //******** <----
+    digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
     // if millis() or timer wraps around, we'll just reset it
     if (timer > millis())  timer = millis();
     // approximately every 2 seconds or so, print out the current stats
     if (millis() - timer > 2000) { 
       timer = millis(); // reset the timer
-      digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled. // Need to test whether we move this to  ******** <--- 
+      
       mydata.latitude = GPS.latitude;
       mydata.longitude = GPS.longitude;
+      
+      digitalWrite(SlaveInterruptPin,LOW);
+      delay(1000); // Give our sleepy slave a second to get itself started up
+      digitalWrite(SlaveInterruptPin,HIGH); // Set out pin back to High
       ET.sendData();
+      Serial.println("fix!");
+      Serial.println(GPS.fixquality);
+      Serial.print("\nTime: ");
+      Serial.print(GPS.hour, DEC); Serial.print(':');
+      Serial.print(GPS.minute, DEC); Serial.print(':');
+      Serial.print(GPS.seconds, DEC); Serial.print('.');
+      Serial.println(GPS.milliseconds);
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep. Slave is set to 250ms for read loop this gives us atleast 4 attempts
+      retry_counter=0; //Re-set the rety counter so we go round the loop again
       Knock_Out();//Sleep
     }
   }
   
   retry_counter ++; //Add 1 to our retry counter
-  if (retry_counter == 120)
+  if (retry_counter >= 120)
   {
     digitalWrite(GPSEnablePin,LOW); //Ensure gps is disabled.
     retry_counter=0;
     Knock_Out();//Sleep
+    
   }
+  Serial.println(retry_counter);
   delay(1000); // Wait 1 second before hitting the loop again
 }
 
@@ -117,6 +139,7 @@ void Knock_Out()
   //Sleep function using watchdog timer extended in most power saving mode "POWER DOWN"
   sleep.pwrDownMode();
   sleep.sleepDelay(sleepTime);
+  digitalWrite(GPSEnablePin,HIGH); //Ensure gps is enabled now we are awake.
 }
 
 void useInterrupt(boolean v) {
