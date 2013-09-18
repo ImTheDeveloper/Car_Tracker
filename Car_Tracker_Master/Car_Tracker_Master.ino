@@ -103,6 +103,7 @@ void loop()
       digitalWrite(SlaveInterruptPin,HIGH); // Set out pin back to High
       ET.sendData();
       delay(1000); //Delay added to allow for ET.sendData() to fully communicate before falling back to sleep. Slave is set to 250ms for read loop this gives us atleast 4 attempts
+      retry_counter=0; //Re-set the rety counter so we go round the loop again
       Knock_Out();//Sleep
     }
   }
