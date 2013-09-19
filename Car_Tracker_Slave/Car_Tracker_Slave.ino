@@ -17,7 +17,7 @@
 #include <avr/interrupt.h>
 
 //Construction
-SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d3 and main d2 to second d3 for communication to master
+SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d4 and main d2 to second d5 for communication to master
 SoftEasyTransfer ET; 
 
 
@@ -25,8 +25,8 @@ SoftEasyTransfer ET;
 struct RECEIVE_DATA_STRUCTURE{
   float latitude;
   float longitude;
-  char lon_string;
-  char lat_string;
+ // char lon_string;
+ // char lat_string;
 };
 
 //Declarations
