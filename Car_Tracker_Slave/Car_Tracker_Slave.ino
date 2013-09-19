@@ -13,12 +13,13 @@
 
 #include <SoftEasyTransfer.h>
 #include <SoftwareSerial.h>
-#include <Sleep_n0m1.h>
+#include <avr/sleep.h>
+#include <avr/interrupt.h>
 
 //Construction
-SoftwareSerial mySerial2ndDuno(2, 3); /// main d3 to second d3 and main d2 to second d3 for communication to master
+SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d3 and main d2 to second d3 for communication to master
 SoftEasyTransfer ET; 
-Sleep sleep;
+
 
 //Definitions
 struct RECEIVE_DATA_STRUCTURE{
@@ -32,22 +33,20 @@ struct RECEIVE_DATA_STRUCTURE{
 RECEIVE_DATA_STRUCTURE mydata;
 char latty[20];
 char longy[20];
-int InterruptPin = 11;
 
 // ***************************************
 // Setup
 // ***************************************
 
 void setup(){
+  pinMode(2,INPUT);
+  digitalWrite(2,HIGH);
   Serial.begin(38400); //Debug Serial
   mySerial2ndDuno.begin(9600); //Communication Serial
-  
   ET.begin(details(mydata), &mySerial2ndDuno);  //Expect communication using data structure
   Serial.println("Initialisation complete.");
-  Serial.println("Going to sleep");
-  
-  delay(100); //Ensure serial print has time to run
-  
+  Serial.println("Going to sleep"); 
+  delay(100); //Ensure serial print has time to run  
   Knock_Out(); //Sleep as soon as arduino setup is completed
 }
 
@@ -57,6 +56,7 @@ void setup(){
 
 
 void loop(){
+  
 //Check and see if a data packet has come in.
   if(ET.receiveData()){  
        Serial.println(mydata.latitude);
@@ -67,20 +67,13 @@ void loop(){
 //Trim and turn the inbound data in to correct negative or positives // Need to pass in GPS.lon and GPS.lat at later date
       lat.trim();
       lon.trim();
-  //      
-  //       if (mydata.lon_string == 'W'){
-  //        lon = "-" + lon;
-  //       }
-  //       
-  //       if (mydata.lat_string == 'S'){
-  //         lat = "-" + lat;
-  //       }
 //Setup required JSON for GSM dispatch - DEBUG PRINT ATM
       Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
 //Final step is to sleep the arduino and await for our next interrupt.
       Knock_Out();
     }
 //Addition of a delay to ensure transmission can be caught.
+Serial.println("Looping");
   delay(250);
 }
 
@@ -125,8 +118,28 @@ double convertDegMinToDecDeg (float degMin) {
 
 void Knock_Out()
 {
-  sleep.pwrDownMode(); //set sleep mode
-  sleep.sleepInterrupt(InterruptPin,LOW); //Sleep interrupt set 
+  // Set pin 2 as interrupt and attach handler:
+   attachInterrupt(0, wake, LOW);
+    delay(100);
+    
+    // Choose our preferred sleep mode:
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+ 
+    // Set sleep enable (SE) bit:
+    sleep_enable();
+ 
+    // Put the device to sleep:
+    sleep_mode();
+ 
+    // Upon waking up, sketch continues from this point.
+    sleep_disable();
 }
 
+void wake ()
+{
+  // cancel sleep as a precaution
+  sleep_disable();
+  // must do this as the pin will probably stay low for a while
+  detachInterrupt (0);
+}  // end of wake
 
