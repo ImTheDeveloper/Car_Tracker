@@ -32,20 +32,23 @@ struct RECEIVE_DATA_STRUCTURE{
 RECEIVE_DATA_STRUCTURE mydata;
 char latty[20];
 char longy[20];
-
+int InterruptPin = 7;
 
 // ***************************************
 // Setup
 // ***************************************
 
 void setup(){
-  Serial.begin(38400);
-  mySerial2ndDuno.begin(9600);
-  ET.begin(details(mydata), &mySerial2ndDuno); 
+  Serial.begin(38400); //Debug Serial
+  mySerial2ndDuno.begin(9600); //Communication Serial
+  
+  ET.begin(details(mydata), &mySerial2ndDuno);  //Expect communication using data structure
   Serial.println("Initialisation complete.");
   Serial.println("Going to sleep");
-  delay(100);
-  Knock_Out();
+  
+  delay(100); //Ensure serial print has time to run
+  
+  Knock_Out(); //Sleep as soon as arduino setup is completed
 }
 
 // ***************************************
@@ -54,31 +57,30 @@ void setup(){
 
 
 void loop(){
-  //check and see if a data packet has come in. 
-  if(ET.receiveData()){
-     Serial.println(mydata.latitude);
-     Serial.println(mydata.longitude);
-     
-   //Convert the inbound floats/doubles/ints into string ready for sending to json
-     String lat = dtostrf(convertDegMinToDecDeg(mydata.latitude),10,6,latty);
-     String lon = dtostrf(convertDegMinToDecDeg(mydata.longitude),10,6,longy);
-    //trim and turn them in to correct negative or positives // Need to pass in GPS.lon and GPS.lat at later date
+//Check and see if a data packet has come in.
+  if(ET.receiveData()){  
+       Serial.println(mydata.latitude);
+       Serial.println(mydata.longitude);     
+//Convert the inbound floats/doubles/ints into string ready for sending to json
+       String lat = dtostrf(convertDegMinToDecDeg(mydata.latitude),10,6,latty); 
+       String lon = dtostrf(convertDegMinToDecDeg(mydata.longitude),10,6,longy);
+//Trim and turn the inbound data in to correct negative or positives // Need to pass in GPS.lon and GPS.lat at later date
       lat.trim();
       lon.trim();
-//      
-//       if (mydata.lon_string == 'W'){
-//        lon = "-" + lon;
-//       }
-//       
-//       if (mydata.lat_string == 'S'){
-//         lat = "-" + lat;
-//       }
-    Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
-    
-    //Go to sleep
-    Knock_Out();
+  //      
+  //       if (mydata.lon_string == 'W'){
+  //        lon = "-" + lon;
+  //       }
+  //       
+  //       if (mydata.lat_string == 'S'){
+  //         lat = "-" + lat;
+  //       }
+//Setup required JSON for GSM dispatch - DEBUG PRINT ATM
+      Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
+//Final step is to sleep the arduino and await for our next interrupt.
+      Knock_Out();
     }
-  //you should make this delay shorter then your transmit delay or else messages could be lost
+//Addition of a delay to ensure transmission can be caught.
   delay(250);
 }
 
@@ -87,28 +89,27 @@ void loop(){
 // Custom Functions
 // ***************************************
 
-String gps2string (String lat, float latitude, String lon, float longitude) {
+//String gps2string (String lat, float latitude, String lon, float longitude) {
+//  int dd = (int) latitude/100;
+//  int mm = (int) latitude % 100;
+//  int mmm = (int) round(1000 * (latitude - floor(latitude)));
+//  String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+//  dd = (int) longitude/100;
+//  mm = (int) longitude % 100;
+//  mmm = (int) round(1000 * (longitude - floor(longitude)));
+//  String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+//  String myString = gps2lat + ", " + gps2lon;
+//  return myString;
+//};
 
-  int dd = (int) latitude/100;
-  int mm = (int) latitude % 100;
-  int mmm = (int) round(1000 * (latitude - floor(latitude)));
-  String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-  dd = (int) longitude/100;
-  mm = (int) longitude % 100;
-  mmm = (int) round(1000 * (longitude - floor(longitude)));
-  String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-  String myString = gps2lat + ", " + gps2lon;
-  return myString;
-};
-
-// returns a string of length n (fixed-width)
-String int2fw (int x, int n) { 
-  String s = (String) x;
-  while (s.length() < n) {
-    s = "0" + s;
-  }
-  return s;
-}
+//// returns a string of length n (fixed-width)
+//String int2fw (int x, int n) { 
+//  String s = (String) x;
+//  while (s.length() < n) {
+//    s = "0" + s;
+//  }
+//  return s;
+//}
 
   // degree-minute format to decimal-degrees
 double convertDegMinToDecDeg (float degMin) {
@@ -125,7 +126,7 @@ double convertDegMinToDecDeg (float degMin) {
 void Knock_Out()
 {
   sleep.pwrDownMode(); //set sleep mode
-  sleep.sleepInterrupt(0,LOW); //sleep for: sleepTime
+  sleep.sleepInterrupt(InterruptPin,LOW); //Sleep interrupt set 
 }
 
 
