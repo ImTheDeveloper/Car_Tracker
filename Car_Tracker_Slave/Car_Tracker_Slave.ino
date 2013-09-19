@@ -32,7 +32,7 @@ struct RECEIVE_DATA_STRUCTURE{
 RECEIVE_DATA_STRUCTURE mydata;
 char latty[20];
 char longy[20];
-int InterruptPin = 7;
+int InterruptPin = 11;
 
 // ***************************************
 // Setup
