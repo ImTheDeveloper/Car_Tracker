@@ -15,7 +15,7 @@
 //#include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
-#include <GSM.h>
+#include <GSM.h> //Useful reference: http://purposefulscience.blogspot.de/2013/06/arduino-gsm-shield-tips.html
 
 //Construction
 AltSoftSerial mySerial2ndDuno; //tx9 rx8 unusable10
