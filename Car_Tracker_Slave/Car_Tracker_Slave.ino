@@ -10,16 +10,20 @@
 // ***************************************
 // Library Inclusions
 // ***************************************
-
+#include <AltSoftSerial.h> //When you use this you need to replace all softwareserial occurrences in the softeasy libraries with altsoftserial.
 #include <SoftEasyTransfer.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
+#include <GSM.h>
 
 //Construction
-SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d4 and main d2 to second d5 for communication to master
+AltSoftSerial mySerial2ndDuno; //tx9 rx8 unusable10
+//SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d4 and main d2 to second d5 for communication to master
 SoftEasyTransfer ET; 
-
+GSMClient client;
+GPRS gprs;
+GSM gsmAccess;
 
 //Definitions
 struct RECEIVE_DATA_STRUCTURE{
@@ -34,6 +38,11 @@ RECEIVE_DATA_STRUCTURE mydata;
 char latty[20];
 char longy[20];
 int loop_counter=0;
+char server[] = "api.xivley.com"; 
+unsigned long lastConnectionTime = 0;           // last time you connected to the server, in milliseconds
+boolean lastConnected = false;                  // state of the connection last time through the main loop
+const unsigned long postingInterval = 10*1000;  // delay between updates to Pachube.com
+boolean dataSent = false;
 // ***************************************
 // Setup
 // ***************************************
@@ -71,6 +80,13 @@ void loop(){
     lon.trim();
     //Setup required JSON for GSM dispatch - DEBUG PRINT ATM
     Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
+    //Begin GSM work
+    START_GSM();
+    String sendString = "sensor1";
+    delay(1000);
+    SEND_DATA(sendString);
+    delay(1000);
+    
     //Final step is to sleep the arduino and await for our next interrupt.
     Knock_Out();
   }
@@ -79,7 +95,7 @@ void loop(){
   
   delay(250);
   
-  loop_counter++
+  loop_counter++;
     if (loop_counter>10)
   {
     loop_counter=0;
@@ -153,4 +169,109 @@ void wake ()
   detachInterrupt (0);
 }  // end of wake
 
+void START_GSM()
+{
+  // initialize serial communications and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
+  }
+
+  // connection state
+  boolean notConnected = true;
+
+  // After starting the modem with GSM.begin()
+  // attach the shield to the GPRS network with the APN, login and password 
+  while(notConnected)
+  {
+    if((gsmAccess.begin("")==GSM_READY) &
+      (gprs.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY))
+      notConnected = false;
+    else
+    {
+      Serial.println("Not connected");
+      delay(1000);
+    }
+  }
+
+  Serial.println("Connected to GPRS network");
+}
+
+void SEND_DATA(String dataString)
+{
+
+  while(!dataSent)
+  {
+    // if there's incoming data from the net connection.
+    // send it out the serial port.  This is for debugging
+    // purposes only
+    if (client.available())
+    {
+      char c = client.read();
+      Serial.print(c);
+    }
+
+    // if there's no net connection, but there was one last time
+    // through the loop, then stop the client
+    if (!client.connected() && lastConnected)
+    {
+      Serial.println();
+      Serial.println("disconnecting.");
+      client.stop();
+      dataSent=true;
+    }
+
+    // if you're not connected, and ten seconds have passed since
+    // your last connection, then connect again and send data
+    if(!client.connected() && (millis() - lastConnectionTime > postingInterval))
+    {
+      sendData(dataString);
+    }
+    // store the state of the connection for next time through
+    // the loop
+    lastConnected = client.connected();
+  }
+}
+
+// this method makes a HTTP connection to the server
+void sendData(String thisData)
+{
+  // if there's a successful connection:
+  if (client.connect(server, 80))
+  {
+    Serial.println("connecting...");
+
+//    // send the HTTP PUT request:
+//    client.print("PUT /v2/feeds/");
+//    //client.print(FEEDID);
+//    client.println(".csv HTTP/1.1");
+//    client.println("Host: api.pachube.com");
+//    client.print("X-ApiKey: ");
+//    // client.println(APIKEY);
+//    client.print("User-Agent: ");
+//    // client.println(USERAGENT);
+//    client.print("Content-Length: ");
+//    client.println(thisData.length());
+//
+//    // last pieces of the HTTP PUT request
+//    client.println("Content-Type: text/csv");
+    client.println("GET /search?q=arduino HTTP/1.1");
+    client.println("Host: www.google.com");
+    client.println("Connection: close");
+    client.println();
+
+    // here's the actual content of the PUT request
+    client.println(thisData);
+  } 
+  else
+  {
+    // if you couldn't make a connection
+    Serial.println("connection failed");
+    Serial.println();
+    Serial.println("disconnecting.");
+    client.stop();
+  }
+  // note the time that the connection was made or attempted:
+  lastConnectionTime = millis();
+}
 
