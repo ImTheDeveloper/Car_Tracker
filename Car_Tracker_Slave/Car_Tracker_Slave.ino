@@ -12,18 +12,16 @@
 // ***************************************
 #include <AltSoftSerial.h> //When you use this you need to replace all softwareserial occurrences in the softeasy libraries with altsoftserial.
 #include <SoftEasyTransfer.h>
-//#include <SoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
 #include <GSM.h> //Useful reference: http://purposefulscience.blogspot.de/2013/06/arduino-gsm-shield-tips.html
 
 //Construction
 AltSoftSerial mySerial2ndDuno; //tx9 rx8 unusable10
-//SoftwareSerial mySerial2ndDuno(4, 5); /// main d3 to second d4 and main d2 to second d5 for communication to master
 SoftEasyTransfer ET; 
-GSMClient client;
-GPRS gprs;
-GSM gsmAccess;
+GSM gsmAccess(true);        // GSM access: include a 'true' parameter for debug enabled
+GPRS gprsAccess;  // GPRS access
+GSMClient client;  // Client service for TCP connection
 
 //Definitions
 struct RECEIVE_DATA_STRUCTURE{
@@ -58,7 +56,7 @@ void setup(){
   Serial.println("Initialisation complete.");
   Serial.println("Going to sleep"); 
   delay(100); //Ensure serial print has time to run  
-  Knock_Out(); //Sleep as soon as arduino setup is completed
+  //Knock_Out(); //Sleep as soon as arduino setup is completed
 }
 
 // ***************************************
@@ -79,25 +77,26 @@ void loop(){
     lat.trim();
     lon.trim();
     //Setup required JSON for GSM dispatch - DEBUG PRINT ATM
-    Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
-    //Begin GSM work
-    START_GSM();
-    String sendString = "sensor1";
-    delay(1000);
-    SEND_DATA(sendString);
-    delay(1000);
+    //Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
+    
+    
+      Serial.println(F("Begin GSM!"));
+      START_GSM(); //Works when shielded. Needs a check on extra jump wire pins to work on breadboard. TO DO!
+      Serial.println(F("End GSM!"));
+  
     
     //Final step is to sleep the arduino and await for our next interrupt.
     Knock_Out();
-  }
+ }
   //Addition of a delay to ensure transmission can be caught.
-  Serial.println("Looping");
+  Serial.println(F("Looping"));
   
   delay(250);
   
   loop_counter++;
     if (loop_counter>10)
   {
+    Serial.println(F("Sleeping max loops"));
     loop_counter=0;
     Knock_Out();   
   }
@@ -107,28 +106,6 @@ void loop(){
 // ***************************************
 // Custom Functions
 // ***************************************
-
-//String gps2string (String lat, float latitude, String lon, float longitude) {
-//  int dd = (int) latitude/100;
-//  int mm = (int) latitude % 100;
-//  int mmm = (int) round(1000 * (latitude - floor(latitude)));
-//  String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-//  dd = (int) longitude/100;
-//  mm = (int) longitude % 100;
-//  mmm = (int) round(1000 * (longitude - floor(longitude)));
-//  String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-//  String myString = gps2lat + ", " + gps2lon;
-//  return myString;
-//};
-
-//// returns a string of length n (fixed-width)
-//String int2fw (int x, int n) { 
-//  String s = (String) x;
-//  while (s.length() < n) {
-//    s = "0" + s;
-//  }
-//  return s;
-//}
 
 // degree-minute format to decimal-degrees
 double convertDegMinToDecDeg (float degMin) {
@@ -171,21 +148,15 @@ void wake ()
 
 void START_GSM()
 {
-  // initialize serial communications and wait for port to open:
-  Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }
-
-  // connection state
-  boolean notConnected = true;
-
-  // After starting the modem with GSM.begin()
-  // attach the shield to the GPRS network with the APN, login and password 
-  while(notConnected)
+//Begin GSM work
+              // connection state
+          boolean notConnected = true;
+        
+        
+while(notConnected)
   {
     if((gsmAccess.begin("")==GSM_READY) &
-      (gprs.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY))
+        (gprsAccess.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY))
       notConnected = false;
     else
     {
@@ -194,7 +165,17 @@ void START_GSM()
     }
   }
 
-  Serial.println("Connected to GPRS network");
+          
+      Serial.println(F("Connected to GPRS network"));
+      Serial.println(F("Start Send GSM!"));
+      String sendString = "sensor1";
+      delay(1000);
+      //SEND_DATA(sendString);
+      delay(1000);
+      gprsAccess.detachGPRS();
+gsmAccess.shutdown();
+delay(5000);
+
 }
 
 void SEND_DATA(String dataString)
@@ -216,7 +197,7 @@ void SEND_DATA(String dataString)
     if (!client.connected() && lastConnected)
     {
       Serial.println();
-      Serial.println("disconnecting.");
+      Serial.println(F("disconnecting."));
       client.stop();
       dataSent=true;
     }
@@ -239,7 +220,7 @@ void sendData(String thisData)
   // if there's a successful connection:
   if (client.connect(server, 80))
   {
-    Serial.println("connecting...");
+    Serial.println(F("connecting..."));
 
 //    // send the HTTP PUT request:
 //    client.print("PUT /v2/feeds/");
@@ -266,9 +247,9 @@ void sendData(String thisData)
   else
   {
     // if you couldn't make a connection
-    Serial.println("connection failed");
+    Serial.println(F("connection failed"));
     Serial.println();
-    Serial.println("disconnecting.");
+    Serial.println(F("disconnecting."));
     client.stop();
   }
   // note the time that the connection was made or attempted:
