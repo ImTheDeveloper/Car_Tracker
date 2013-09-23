@@ -14,7 +14,7 @@
 #include <SoftEasyTransfer.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
-#include <GSM.h> //Useful reference: http://purposefulscience.blogspot.de/2013/06/arduino-gsm-shield-tips.html
+#include <GSM.h> //Useful reference: http://purposefulscience.blogspot.de/2013/06/arduino-gsm-shield-tips.html //Arduino forum link http://forum.arduino.cc/index.php?board=90.0
 
 //Construction
 AltSoftSerial mySerial2ndDuno; //tx9 rx8 unusable10
@@ -154,16 +154,17 @@ void START_GSM()
 while (notConnected) {
     digitalWrite(3,HIGH);
     if(gsmAccess.begin("")==GSM_READY){
-      delay(3000);
+      delay(5000);
       if(gprsAccess.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY){
         notConnected = false;
+        delay(3000);
         //digitalWrite(redLed, LOW);
         //digitalWrite(greenLed, HIGH);
       }
     }
     else{
       //digitalWrite(redLed, HIGH);
-      delay(1000);
+      delay(3000);
     }
   }
   
@@ -172,13 +173,14 @@ while (notConnected) {
   //Serial.println(F("Connected to GPRS network"));
   //Serial.println(F("Start Send GSM!"));
   String sendString = "sensor1";
-  delay(2000);
+  //delay(2000);
   //SEND_DATA(sendString);
-  delay(2000);
+  delay(3000);
   gprsAccess.detachGPRS();
   if(gsmAccess.shutdown()){
     digitalWrite(3,LOW);
     notConnected = true;
+    delay(3000);
   }
   else
   {
