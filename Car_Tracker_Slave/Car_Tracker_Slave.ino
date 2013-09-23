@@ -49,7 +49,7 @@ void setup(){
   pinMode(2,INPUT);
   digitalWrite(2,HIGH);
 
-  Serial.begin(38400); //Debug Serial
+  Serial.begin(9600); //Debug Serial
   mySerial2ndDuno.begin(9600); //Communication Serial
   ET.begin(details(mydata), &mySerial2ndDuno);  //Expect communication using data structure
 
@@ -67,39 +67,41 @@ void setup(){
 void loop(){
 
   //Check and see if a data packet has come in.
-  if(ET.receiveData()){  
-    Serial.println(mydata.latitude);
-    Serial.println(mydata.longitude);     
-    //Convert the inbound floats/doubles/ints into string ready for sending to json
-    String lat = dtostrf(convertDegMinToDecDeg(mydata.latitude),10,6,latty); 
-    String lon = dtostrf(convertDegMinToDecDeg(mydata.longitude),10,6,longy);
-    //Trim and turn the inbound data in to correct negative or positives // Need to pass in GPS.lon and GPS.lat at later date
-    lat.trim();
-    lon.trim();
-    //Setup required JSON for GSM dispatch - DEBUG PRINT ATM
-    //Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
-    
-    
-      Serial.println(F("Begin GSM!"));
-      START_GSM(); //Works when shielded. Needs a check on extra jump wire pins to work on breadboard. TO DO!
-      Serial.println(F("End GSM!"));
-  
-    
-    //Final step is to sleep the arduino and await for our next interrupt.
-    Knock_Out();
- }
-  //Addition of a delay to ensure transmission can be caught.
-  Serial.println(F("Looping"));
-  
-  delay(250);
-  
-  loop_counter++;
-    if (loop_counter>10)
-  {
-    Serial.println(F("Sleeping max loops"));
-    loop_counter=0;
-    Knock_Out();   
-  }
+  //  if(ET.receiveData()){  
+  //    Serial.println(mydata.latitude);
+  //    Serial.println(mydata.longitude);     
+  //    //Convert the inbound floats/doubles/ints into string ready for sending to json
+  //    String lat = dtostrf(convertDegMinToDecDeg(mydata.latitude),10,6,latty); 
+  //    String lon = dtostrf(convertDegMinToDecDeg(mydata.longitude),10,6,longy);
+  //    //Trim and turn the inbound data in to correct negative or positives // Need to pass in GPS.lon and GPS.lat at later date
+  //    lat.trim();
+  //    lon.trim();
+  //    //Setup required JSON for GSM dispatch - DEBUG PRINT ATM
+  //    //Serial.print("{\"location\": {\"disposition\": \"mobile\",\"name\": \"Car Location\",\"exposure\": \"outdoor\", \"domain\": \"physical\",\"ele\": \"0000\",\"lat\": "+lat+",\"lon\": "+lon+"}}");
+  //    
+
+  //Serial.println(F("Begin GSM!"));
+  //Serial.println(freeRam());
+  START_GSM(); //Works when shielded. Needs a check on extra jump wire pins to work on breadboard. TO DO!
+  //Serial.println(freeRam());
+  //Serial.println(F("End GSM!"));
+
+
+  //Final step is to sleep the arduino and await for our next interrupt.
+  //    Knock_Out();
+  // }
+  //  //Addition of a delay to ensure transmission can be caught.
+  //  Serial.println(F("Looping"));
+  //  
+  //  delay(250);
+  //  
+  //  loop_counter++;
+  //    if (loop_counter>10)
+  //  {
+  //    Serial.println(F("Sleeping max loops"));
+  //    loop_counter=0;
+  //    Knock_Out();   
+  //  }
 }
 
 
@@ -148,33 +150,41 @@ void wake ()
 
 void START_GSM()
 {
-//Begin GSM work
-              // connection state
-          boolean notConnected = true;
-        
-        
-while(notConnected)
-  {
-    if((gsmAccess.begin("")==GSM_READY) &
-        (gprsAccess.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY))
-      notConnected = false;
-    else
-    {
-      Serial.println("Not connected");
+  boolean notConnected = true;
+while (notConnected) {
+    digitalWrite(3,HIGH);
+    if(gsmAccess.begin("")==GSM_READY){
+      delay(3000);
+      if(gprsAccess.attachGPRS("giffgaff.com", "giffgaff", "password")==GPRS_READY){
+        notConnected = false;
+        //digitalWrite(redLed, LOW);
+        //digitalWrite(greenLed, HIGH);
+      }
+    }
+    else{
+      //digitalWrite(redLed, HIGH);
       delay(1000);
     }
   }
+  
 
-          
-      Serial.println(F("Connected to GPRS network"));
-      Serial.println(F("Start Send GSM!"));
-      String sendString = "sensor1";
-      delay(1000);
-      //SEND_DATA(sendString);
-      delay(1000);
-      gprsAccess.detachGPRS();
-gsmAccess.shutdown();
-delay(5000);
+
+  //Serial.println(F("Connected to GPRS network"));
+  //Serial.println(F("Start Send GSM!"));
+  String sendString = "sensor1";
+  delay(2000);
+  //SEND_DATA(sendString);
+  delay(2000);
+  gprsAccess.detachGPRS();
+  if(gsmAccess.shutdown()){
+    digitalWrite(3,LOW);
+    notConnected = true;
+  }
+  else
+  {
+    delay(1000);
+  }
+
 
 }
 
@@ -196,7 +206,7 @@ void SEND_DATA(String dataString)
     // through the loop, then stop the client
     if (!client.connected() && lastConnected)
     {
-      Serial.println();
+  //    Serial.println();
       Serial.println(F("disconnecting."));
       client.stop();
       dataSent=true;
@@ -222,20 +232,20 @@ void sendData(String thisData)
   {
     Serial.println(F("connecting..."));
 
-//    // send the HTTP PUT request:
-//    client.print("PUT /v2/feeds/");
-//    //client.print(FEEDID);
-//    client.println(".csv HTTP/1.1");
-//    client.println("Host: api.pachube.com");
-//    client.print("X-ApiKey: ");
-//    // client.println(APIKEY);
-//    client.print("User-Agent: ");
-//    // client.println(USERAGENT);
-//    client.print("Content-Length: ");
-//    client.println(thisData.length());
-//
-//    // last pieces of the HTTP PUT request
-//    client.println("Content-Type: text/csv");
+    //    // send the HTTP PUT request:
+    //    client.print("PUT /v2/feeds/");
+    //    //client.print(FEEDID);
+    //    client.println(".csv HTTP/1.1");
+    //    client.println("Host: api.pachube.com");
+    //    client.print("X-ApiKey: ");
+    //    // client.println(APIKEY);
+    //    client.print("User-Agent: ");
+    //    // client.println(USERAGENT);
+    //    client.print("Content-Length: ");
+    //    client.println(thisData.length());
+    //
+    //    // last pieces of the HTTP PUT request
+    //    client.println("Content-Type: text/csv");
     client.println("GET /search?q=arduino HTTP/1.1");
     client.println("Host: www.google.com");
     client.println("Connection: close");
@@ -254,5 +264,11 @@ void sendData(String thisData)
   }
   // note the time that the connection was made or attempted:
   lastConnectionTime = millis();
+}
+
+int freeRam () {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
