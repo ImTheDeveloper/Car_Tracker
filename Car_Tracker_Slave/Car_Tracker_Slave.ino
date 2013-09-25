@@ -154,7 +154,7 @@ void wake ()
 void Start_SMS()
 {
    Serial.println("SMS Messages Sender");
-
+digitalWrite(3,HIGH);
   // connection state
   boolean notConnected = true;
 
@@ -171,11 +171,7 @@ void Start_SMS()
     }
   }
   Serial.println("GSM initialized");
-  sendSMS();
-}
-
-void sendSMS(){
-
+  
   Serial.print("Message to mobile number: ");
   Serial.println("07817794740");
 
@@ -190,7 +186,18 @@ void sendSMS(){
   sms.print("GPS Data");
   sms.endSMS(); 
   Serial.println("\nCOMPLETE!\n");  
+    if(gsmAccess.shutdown()){
+    digitalWrite(3,LOW);
+    notConnected = true;
+    delay(3000);
+  }
+  else
+  {
+    delay(1000);
+  }
 }
+
+
 
 
 void START_GSM()
