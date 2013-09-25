@@ -22,7 +22,7 @@ SoftEasyTransfer ET;
 GSM gsmAccess(true);        // GSM access: include a 'true' parameter for debug enabled
 GPRS gprsAccess;  // GPRS access
 GSMClient client;  // Client service for TCP connection
-
+GSM_SMS sms;
 //Definitions
 struct RECEIVE_DATA_STRUCTURE{
   float latitude;
@@ -82,9 +82,10 @@ void loop(){
 
   //Serial.println(F("Begin GSM!"));
   //Serial.println(freeRam());
-  START_GSM(); //Works when shielded. Needs a check on extra jump wire pins to work on breadboard. TO DO!
+ // START_GSM(); //Works when shielded. Needs a check on extra jump wire pins to work on breadboard. TO DO!
   //Serial.println(freeRam());
   //Serial.println(F("End GSM!"));
+
 
 
   //Final step is to sleep the arduino and await for our next interrupt.
@@ -147,6 +148,50 @@ void wake ()
   // must do this as the pin will probably stay low for a while
   detachInterrupt (0);
 }  // end of wake
+
+
+
+void Start_SMS()
+{
+   Serial.println("SMS Messages Sender");
+
+  // connection state
+  boolean notConnected = true;
+
+  // Start GSM shield
+  // If your SIM has PIN, pass it as a parameter of begin() in quotes
+  while(notConnected)
+  {
+    if(gsmAccess.begin("")==GSM_READY)
+      notConnected = false;
+    else
+    {
+      Serial.println("Not connected");
+      delay(1000);
+    }
+  }
+  Serial.println("GSM initialized");
+  sendSMS();
+}
+
+void sendSMS(){
+
+  Serial.print("Message to mobile number: ");
+  Serial.println("07817794740");
+
+  // sms text
+  Serial.println("SENDING");
+  Serial.println();
+  Serial.println("Message:");
+  Serial.println("GPS Data");
+
+  // send the message
+  sms.beginSMS("07817794740");
+  sms.print("GPS Data");
+  sms.endSMS(); 
+  Serial.println("\nCOMPLETE!\n");  
+}
+
 
 void START_GSM()
 {
