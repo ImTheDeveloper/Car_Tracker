@@ -173,7 +173,7 @@ digitalWrite(3,HIGH);
   Serial.println("GSM initialized");
   
   Serial.print("Message to mobile number: ");
-  Serial.println("07817794740");
+  Serial.println("+441724411037");
 
   // sms text
   Serial.println("SENDING");
@@ -182,7 +182,7 @@ digitalWrite(3,HIGH);
   Serial.println("GPS Data");
 
   // send the message
-  sms.beginSMS("07817794740");
+  sms.beginSMS("+441724411037");
   sms.print("GPS Data");
   sms.endSMS(); 
   Serial.println("\nCOMPLETE!\n");  
